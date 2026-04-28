@@ -22,20 +22,24 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'mvn clean package -DskipTests -q'
+                dir('loan-calculator') {
+                    bat 'mvn clean package -DskipTests -q'
+                }
             }
         }
 
         stage('Docker Build & Push') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    bat "docker build -t %DOCKER_USER%/loan-calculator:latest ."
-                    bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
-                    bat "docker push %DOCKER_USER%/loan-calculator:latest"
+                dir('loan-calculator') {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'docker-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        bat "docker build -t %DOCKER_USER%/loan-calculator:latest ."
+                        bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+                        bat "docker push %DOCKER_USER%/loan-calculator:latest"
+                    }
                 }
             }
         }
@@ -46,7 +50,7 @@ pipeline {
                     string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    dir("${TF_DIR}") {
+                    dir("loan-calculator/${TF_DIR}") {
                         bat 'terraform init'
                         bat 'terraform apply -auto-approve'
                         script {
@@ -74,9 +78,8 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    // Windows OpenSSH: pass commands to EC2 via ssh using the .pem Terraform saved
                     bat """
-                        ssh -o StrictHostKeyChecking=no -i %PEM_FILE% ec2-user@%EC2_IP% ^
+                        ssh -o StrictHostKeyChecking=no -i loan-calculator\\%PEM_FILE% ec2-user@%EC2_IP% ^
                         "docker pull %DOCKER_USER%/loan-calculator:latest && ^
                          docker stop loan-calculator ; ^
                          docker rm loan-calculator ; ^
