@@ -1,0 +1,7 @@
+# Copy this file to terraform.tfvars and fill in your values
+# NEVER commit terraform.tfvars to Git
+
+aws_region    = "us-east-1"
+instance_type = "t2.micro"
+docker_image  = "yourdockerhubuser/loan-calculator:latest"
+app_port      = 8080

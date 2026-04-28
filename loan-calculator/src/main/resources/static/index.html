@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Interest Calculator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            color: #e94560;
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: #e94560;
+        }
+
+        select option {
+            background: #16213e;
+            color: #fff;
+        }
+
+        .rate-display {
+            text-align: right;
+            color: #e94560;
+            font-size: 0.85rem;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #c0392b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s, transform 0.1s;
+            margin-top: 10px;
+        }
+
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.98); }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 25px;
+        }
+
+        .results h2 {
+            color: rgba(255,255,255,0.9);
+            font-size: 1rem;
+            margin-bottom: 16px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .result-card {
+            background: rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: 16px 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .result-card .label {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .result-card .value {
+            color: #e94560;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Loan Calculator</h1>
+        <p class="subtitle">Calculate your EMI and total interest instantly</p>
+
+        <div class="form-group">
+            <label>Loan Amount (₹)</label>
+            <input type="number" id="principal" placeholder="e.g. 500000" min="1000" />
+        </div>
+
+        <div class="form-group">
+            <label>Annual Interest Rate</label>
+            <input type="range" id="interestRate" min="1" max="30" step="0.1" value="10" oninput="updateRate(this.value)" />
+            <div class="rate-display" id="rateDisplay">10.0% per annum</div>
+        </div>
+
+        <div class="form-group">
+            <label>Loan Tenure</label>
+            <select id="tenure">
+                <option value="6">6 Months</option>
+                <option value="12">1 Year</option>
+                <option value="24">2 Years</option>
+                <option value="36">3 Years</option>
+                <option value="48">4 Years</option>
+                <option value="60" selected>5 Years</option>
+                <option value="84">7 Years</option>
+                <option value="120">10 Years</option>
+                <option value="180">15 Years</option>
+                <option value="240">20 Years</option>
+                <option value="300">25 Years</option>
+                <option value="360">30 Years</option>
+            </select>
+        </div>
+
+        <button onclick="calculate()">Calculate EMI</button>
+        <p class="error" id="error">Please enter a valid loan amount.</p>
+
+        <div class="results" id="results">
+            <h2>Breakdown</h2>
+            <div class="result-grid">
+                <div class="result-card">
+                    <div class="label">Monthly EMI</div>
+                    <div class="value" id="emi">-</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Total Amount</div>
+                    <div class="value" id="totalAmount">-</div>
+                </div>
+                <div class="result-card">
+                    <div class="label">Total Interest</div>
+                    <div class="value" id="totalInterest">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateRate(val) {
+            document.getElementById('rateDisplay').textContent = parseFloat(val).toFixed(1) + '% per annum';
+        }
+
+        function fmt(amount) {
+            return '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        async function calculate() {
+            const principal = parseFloat(document.getElementById('principal').value);
+            const annualInterestRate = parseFloat(document.getElementById('interestRate').value);
+            const tenureMonths = parseInt(document.getElementById('tenure').value);
+            const errorEl = document.getElementById('error');
+
+            if (!principal || principal <= 0) {
+                errorEl.style.display = 'block';
+                document.getElementById('results').style.display = 'none';
+                return;
+            }
+            errorEl.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/loan/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ principal, annualInterestRate, tenureMonths })
+                });
+
+                const data = await response.json();
+                document.getElementById('emi').textContent = fmt(data.emi);
+                document.getElementById('totalAmount').textContent = fmt(data.totalAmount);
+                document.getElementById('totalInterest').textContent = fmt(data.totalInterest);
+                document.getElementById('results').style.display = 'block';
+            } catch (e) {
+                errorEl.textContent = 'Failed to connect to server. Is the backend running?';
+                errorEl.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
