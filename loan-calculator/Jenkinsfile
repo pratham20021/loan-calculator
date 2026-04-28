@@ -54,10 +54,8 @@ pipeline {
                         bat 'terraform init'
                         bat "terraform apply -auto-approve -var=\"docker_image=prathamesh2019/loan-calculator:latest\" -var=\"aws_region=us-east-1\" -var=\"instance_type=t2.micro\" -var=\"app_port=8080\""
                         script {
-                            // bat on Windows prints an extra line with the command itself
-                            // so we strip it by taking only the last non-empty line
                             def rawOutput = bat(script: 'terraform output -raw ec2_public_ip', returnStdout: true).trim()
-                            env.EC2_IP = rawOutput.tokenize('\n').last().trim()
+                            env.EC2_IP = rawOutput.readLines().last().trim()
                         }
                     }
                 }
@@ -73,20 +71,8 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    bat """
-                        ssh -o StrictHostKeyChecking=no -i loan-calculator\\%PEM_FILE% ec2-user@%EC2_IP% ^
-                        "docker pull %DOCKER_USER%/loan-calculator:latest && ^
-                         docker stop loan-calculator ; ^
-                         docker rm loan-calculator ; ^
-                         docker run -d --name loan-calculator --restart always -p 8080:8080 %DOCKER_USER%/loan-calculator:latest"
-                    """
-                    echo "App deployed at: http://%EC2_IP%:8080"
-                }
+                bat "ssh -o StrictHostKeyChecking=no -i loan-calculator\\%PEM_FILE% ec2-user@%EC2_IP% \"docker pull prathamesh2019/loan-calculator:latest && docker stop loan-calculator; docker rm loan-calculator; docker run -d --name loan-calculator --restart always -p 8080:8080 prathamesh2019/loan-calculator:latest\""
+                echo "App deployed at: http://%EC2_IP%:8080"
             }
         }
     }
