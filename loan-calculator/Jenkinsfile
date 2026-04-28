@@ -52,7 +52,7 @@ pipeline {
                 ]) {
                     dir("loan-calculator/${TF_DIR}") {
                         bat 'terraform init'
-                        bat "terraform apply -auto-approve -var=\"docker_image=%DOCKER_USER%/loan-calculator:latest\" -var=\"aws_region=us-east-1\" -var=\"instance_type=t2.micro\" -var=\"app_port=8080\""
+                        bat "terraform apply -auto-approve -var=\"docker_image=prathamesh2019/loan-calculator:latest\" -var=\"aws_region=us-east-1\" -var=\"instance_type=t2.micro\" -var=\"app_port=8080\""
                         script {
                             // bat on Windows prints an extra line with the command itself
                             // so we strip it by taking only the last non-empty line

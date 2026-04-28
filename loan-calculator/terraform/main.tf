@@ -19,16 +19,46 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Use default VPC to keep it simple
-data "aws_vpc" "default" {
-  default = true
+# Create a dedicated VPC
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  tags = { Name = "loan-calculator-vpc" }
+}
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+  tags   = { Name = "loan-calculator-igw" }
+}
+
+resource "aws_subnet" "main" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "${var.aws_region}a"
+  tags                    = { Name = "loan-calculator-subnet" }
+}
+
+resource "aws_route_table" "main" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+  tags = { Name = "loan-calculator-rt" }
+}
+
+resource "aws_route_table_association" "main" {
+  subnet_id      = aws_subnet.main.id
+  route_table_id = aws_route_table.main.id
 }
 
 # Security Group: allow SSH (22), HTTP (80), and app port (8080)
 resource "aws_security_group" "loan_app_sg" {
   name        = "loan-calculator-sg"
   description = "Allow SSH, HTTP, and app traffic"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     description = "SSH"
@@ -98,10 +128,12 @@ resource "local_file" "private_key" {
 
 # EC2 Instance
 resource "aws_instance" "loan_app" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = var.instance_type
-  key_name               = aws_key_pair.loan_app_key.key_name
-  vpc_security_group_ids = [aws_security_group.loan_app_sg.id]
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.loan_app_key.key_name
+  subnet_id                   = aws_subnet.main.id
+  vpc_security_group_ids      = [aws_security_group.loan_app_sg.id]
+  associate_public_ip_address = true
 
   user_data = <<-EOF
     #!/bin/bash
