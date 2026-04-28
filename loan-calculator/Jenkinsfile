@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        DOCKER_IMAGE = "yourdockerhubuser/loan-calculator:latest" // ← Replace with your Docker Hub username
+        DOCKER_IMAGE = "Pratahamesh2019/loan-calculator:latest" // ← Replace with your Docker Hub username
         TF_DIR       = "terraform"
         PEM_FILE     = "terraform\\loan-calculator-key.pem"
     }
